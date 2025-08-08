@@ -1,0 +1,27 @@
+{
+  "name": "fullstack-node-react-template",
+  "version": "1.0.0",
+  "description": "generic fullstack webapp backbone",
+  "keywords": [
+    "midi",
+    "hexbyte"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "github.com/jacksmedia/template"
+  },
+  "license": "MIT",
+  "author": "jacksmedia",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "dependencies": {
+    "@tonejs/midi": "^2.0.28",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "multer": "^2.0.2"
+  }
+}
