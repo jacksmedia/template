@@ -1,21 +1,26 @@
 const express = require('express');
-const multer = require('multer');
 const cors = require('cors');
-const fs = require('fs');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 
-const upload = multer({ dest: 'uploads/' });
 
-// app.post('/upload', upload.single('uploaded'), async (req, res) => {
-//   const events = await parseMidiToEvents(req.file.path);
-//   const path = require('path');
-//   const hexes = translateEventsToFlatHex(events, schema);
+async function query(data) {
+	const response = await fetch(
+		"https://router.huggingface.co/fal-ai/fal-ai/flux-lora",
+		{
+			headers: {
+				Authorization: `Bearer ${process.env.HF_TOKEN}`,
+				"Content-Type": "application/json",
+			},
+			method: "POST",
+			body: JSON.stringify(data),
+		}
+	);
+	const result = await response.blob();
+	return result;
+}
 
-//   fs.unlinkSync(req.file.path);
-
-//   res.send(hexes.join(' '));
-// });
 
 app.listen(3001, () => console.log('Server running on http://localhost:3001'));
