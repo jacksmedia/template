@@ -1,9 +1,28 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
-
+const path = require('path');
 const app = express();
+const port = 3000;
+
+app.use(express.json());
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'build')));
+
+// Serves React app
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+// API route to handle the Hugging Face query
+app.post('/query', async (req, res) => {
+  try {
+    const response = await query(req.body);
+    res.json({ imageData: response });
+  } catch (error) {
+    console.error('Error querying Hugging Face API:', error);
+    res.status(500).json({ error: 'Error querying Hugging Face API' });
+  }
+});
 
 
 async function query(data) {
@@ -23,4 +42,4 @@ async function query(data) {
 }
 
 
-app.listen(3001, () => console.log('Server running on http://localhost:3001'));
+app.listen(3001, () => console.log(`Server running on ${port}`));
