@@ -1,22 +1,24 @@
-// client/src/App.jsx
 import { useState } from 'react';
-// import ReactDOM from 'react-dom/client';
 
 const App = () => {
   const [imageData, setImageData] = useState(null);
 
-  const handleQuery =  async () => {
+  const handleQuery = async () => {
     try {
-      const response = await fetch('/query',{
+      const response = await fetch('/query', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sync_mode: true,
-          prompt: "(ruins, broken, snow, dappled sunlight:1.2), sun, tree, forest, scenery, rock, reflection, ancient, overgrown, mountains, sunset, clouds, mountainous horizon, fantasy, medieval, 1other, looking away, (pixel art, pixelated:1.2), (masterpiece, exceptional, best aesthetic, best quality, masterpiece, extremely detailed:1.2), in the style of umempart",
-        })
+          prompt:
+            '(ruins, broken, snow, dappled sunlight:1.2), sun, tree, forest, scenery, rock, reflection, ancient, overgrown, mountains, sunset, clouds, mountainous horizon, fantasy, medieval, 1other, looking away, (pixel art, pixelated:1.2), (masterpiece, exceptional, best aesthetic, best quality, masterpiece, extremely detailed:1.2), in the style of umempart',
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
       const { imageData } = await response.json();
       setImageData(imageData);
     } catch (error) {
@@ -24,12 +26,18 @@ const App = () => {
     }
   };
 
-  return(
+  return (
     <div>
       <button onClick={handleQuery}>Query Hugging Face</button>
-      {imageData && <img src={URL.createObjectURL(imageData)} alt="Hugging Face model response" />}
+      {imageData && (
+        <img
+          src={`data:image/png;base64,${imageData}`}
+          alt="Hugging Face model response"
+          style={{ maxWidth: '500px', display: 'block', marginTop: '1rem' }}
+        />
+      )}
     </div>
   );
-}
+};
 
 export default App;
