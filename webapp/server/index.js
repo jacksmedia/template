@@ -17,13 +17,16 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// HF endpoint (inference provider)
-const HF_MODEL_URL = 'https://router.huggingface.co/fal-ai/fal-ai/flux-lora';
+// endpoint (inference provider)
+// const HF_MODEL_URL = 'https://router.huggingface.co/jayavibhav/pixel-art-style';
+const HF_MODEL_URL = 'https://router.huggingface.co/nebius/v1/images/generations';
 
+// access HF from our server
 app.post('/query', async (req, res) => {
   try {
-    const imageBase64 = await queryHuggingFace(req.body);
-    res.json({ imageData: imageBase64 });
+    const hfResponse = await queryHuggingFace(req.body);
+    // Pass HF's JSON straight through to the client
+    res.json(hfResponse);
   } catch (error) {
     console.error('Error querying Hugging Face API:', error);
     res.status(500).json({ error: 'Error querying Hugging Face API' });
@@ -31,22 +34,23 @@ app.post('/query', async (req, res) => {
 });
 
 async function queryHuggingFace(data) {
-  const response = await fetch(HF_MODEL_URL, {
-    headers: {
-      Authorization: `Bearer ${process.env.HF_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-
+  const response = await fetch(
+    HF_MODEL_URL, {
+      headers: {
+        Authorization: `Bearer ${process.env.HF_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+  
   if (!response.ok) {
     throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}`);
   }
 
-  // Converts blob -> ArrayBuffer -> Buffer -> Base64 for image serve
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer).toString('base64');
+  // HF returns JSON with { data: [{ b64_json: "..." }] }
+  return await response.json();
 }
 
 app.listen(port, () => console.log(`Server running on http://localhost:${port}`));

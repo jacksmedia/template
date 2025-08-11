@@ -9,18 +9,19 @@ const App = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sync_mode: true,
+          response_format: "b64_json",
           prompt:
-            '(ruins, broken, snow, dappled sunlight:1.2), sun, tree, forest, scenery, rock, reflection, ancient, overgrown, mountains, sunset, clouds, mountainous horizon, fantasy, medieval, 1other, looking away, (pixel art, pixelated:1.2), (masterpiece, exceptional, best aesthetic, best quality, masterpiece, extremely detailed:1.2), in the style of umempart',
+            '(ruins, broken, snow, dappled sunlight:1.2), A futuristic cityscape in the style of Moebius',
+          model: "black-forest-labs/flux-dev"
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
-      const { imageData } = await response.json();
+      const { data } = await response.json();
+      const imageData = data.data[0].b64_json; // access initial JSON object
       setImageData(imageData);
+
     } catch (error) {
       console.error('Error contacting Hugging Face API:', error);
     }
