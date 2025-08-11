@@ -28,11 +28,10 @@ const HF_MODEL_URL = 'https://router.huggingface.co/nebius/v1/images/generations
 app.post('/query', async (req, res) => {
   try {
     const result = await client.textToImage({
-      model: "black-forest-labs/FLUX.1-dev",
-      provider: "fal-ai",            // Explicitly choose fal.ai
-      inputs: req.body.prompt,       // Your prompt payload
-      response_format: "b64_json"
+      model: "nitrosocke/pixel-art-xl",
+      inputs: req.body.prompt
     });
+
     res.json({ imageData: result.data[0].b64_json });
   } catch (error) {
     console.error("Error querying Fal AI via SDK:", error);
