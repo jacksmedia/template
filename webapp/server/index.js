@@ -10,7 +10,7 @@ const app = express();
 const port = 3001;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Initialize client with fal-ai provider
+// Initializes client with fal-ai provider
 const client = new InferenceClient({
   apiKey: process.env.HF_TOKEN,
   provider: "fal-ai"
@@ -25,25 +25,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Simple test endpoint
-app.get('/test', (req, res) => {
-  console.log('Test endpoint hit');
-  res.json({ message: 'Server is working!', timestamp: new Date().toISOString() });
-});
-
-// Health check endpoint
-app.post('/health', (req, res) => {
-  console.log('Health check endpoint hit');
-  res.json({ status: 'ok', body: req.body });
-});
-
-// Generates image using HuggingFace Inference API with fal-ai provider
+// Generates image using HF Inference API with fal-ai provider
 app.post('/query', async (req, res) => {
-  console.log('=== /query endpoint hit ===');
-  console.log('Request method:', req.method);
-  console.log('Request body:', req.body);
-  console.log('Headers:', req.headers);
-  
   try {
     console.log('Received prompt:', req.body.prompt);
     
@@ -64,7 +47,7 @@ app.post('/query', async (req, res) => {
     console.error("Error querying HuggingFace via fal-ai:", error);
     res.status(500).json({ 
       error: error.message,
-      details: error.response?.data || 'Unknown error'
+      details: error.response?.data || 'Unknown error, no details available'
     });
   }
 });

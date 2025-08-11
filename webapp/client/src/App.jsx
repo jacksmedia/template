@@ -6,38 +6,6 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Test server connectivity
-  const testServer = async () => {
-    try {
-      console.log('Testing server connectivity...');
-      const response = await fetch('/test');
-      const data = await response.json();
-      console.log('Server test successful:', data);
-      alert(`Server is working! Response: ${data.message}`);
-    } catch (error) {
-      console.error('Server test failed:', error);
-      alert(`Server test failed: ${error.message}`);
-    }
-  };
-
-  // Test POST endpoint
-  const testHealth = async () => {
-    try {
-      console.log('Testing POST endpoint...');
-      const response = await fetch('/health', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ test: 'data' }),
-      });
-      const data = await response.json();
-      console.log('Health check successful:', data);
-      alert(`Health check passed! Server received: ${JSON.stringify(data.body)}`);
-    } catch (error) {
-      console.error('Health check failed:', error);
-      alert(`Health check failed: ${error.message}`);
-    }
-  };
-
   const handleQuery = async () => {
     setLoading(true);
     setError(null);
@@ -48,7 +16,7 @@ const App = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Updated prompt to use trigger word and pixel art styling
+          // Prompt uses LoRA trigger word + pixel art styling in lieu of accessing LoRA
           prompt: '(ruins, broken, snow, dappled sunlight:1.2), A futuristic cityscape in the style of umempart, (pixel art, pixelated:1.2), (masterpiece, exceptional, best aesthetic, best quality, masterpiece, extremely detailed:1.2)'
         }),
       });
@@ -71,48 +39,16 @@ const App = () => {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>HuggingFace FLUX Pixel Art Generator</h1>
-      
-      {/* Debug buttons */}
-      <div style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: '#5f5f5f', borderRadius: '8px' }}>
-        <h3>Debug Tools:</h3>
-        <button 
-          onClick={testServer}
-          style={{
-            padding: '0.5rem 1rem',
-            margin: '0.5rem',
-            backgroundColor: '#1bc442ff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Test Server (GET)
-        </button>
-        <button 
-          onClick={testHealth}
-          style={{
-            padding: '0.5rem 1rem',
-            margin: '0.5rem',
-            backgroundColor: '#17a2b8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Test POST Endpoint
-        </button>
-      </div>
-      
+      <h1>Demo HuggingFace FLUX Pixel Art Generator</h1>
+      <p>built with open resources by Jacks Media</p>
+      <h3>Custom prompt feature coming soon!</h3>
       <button 
         onClick={handleQuery} 
         disabled={loading}
         style={{
           padding: '1rem 2rem',
           fontSize: '1rem',
-          backgroundColor: loading ? '#ccc' : '#007bff',
+          backgroundColor: loading ? '#ccc' : '#126c80ff',
           color: 'white',
           border: 'none',
           borderRadius: '5px',
