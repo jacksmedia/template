@@ -12,3 +12,12 @@ Bootstrapped with Vite. Intended for use with Vercel, but can work with any mode
 type:
 
 `npm run dev`
+
+## Details
+App is intended to demonstrate the HuggingFace ecosystem of text-to-image models by querying one and rendering an image based on a hardcoded text prompt. Future versions of this will offer an input for custom user prompts.
+
+Severe rate limiting will exist when this app is deployed in order to prevent abuse and prohibitive charges to the account that's behind this project.
+
+The LoRA chosen is here: (Modern Pixel Art)[https://huggingface.co/UmeAiRT/FLUX.1-dev-LoRA-Modern_Pixel_art]
+
+Since the existing HF infra does not currently provide access to LoRAs, the main model is queried instead, and the trigger token for this LoRA is used to access its training weights.The main model is here: (Black Forest Labs Flux1)[https://huggingface.co/black-forest-labs/FLUX.1-dev]
