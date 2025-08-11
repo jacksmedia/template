@@ -1,12 +1,15 @@
 // server/index.js
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fetch = global.fetch;
-require('dotenv').config();
+import { InferenceClient } from "@huggingface/inference";
+import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import 'dotenv/config';
 
 const app = express();
+const client = new InferenceClient(process.env.HF_TOKEN);
+const fetch = global.fetch;
 const port = 3001;
+const __dirname = import.meta.dirname;
 
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
@@ -24,12 +27,16 @@ const HF_MODEL_URL = 'https://router.huggingface.co/nebius/v1/images/generations
 // access HF from our server
 app.post('/query', async (req, res) => {
   try {
-    const hfResponse = await queryHuggingFace(req.body);
-    // Pass HF's JSON straight through to the client
-    res.json(hfResponse);
+    const result = await client.textToImage({
+      model: "black-forest-labs/FLUX.1-dev",
+      provider: "fal-ai",            // Explicitly choose fal.ai
+      inputs: req.body.prompt,       // Your prompt payload
+      response_format: "b64_json"
+    });
+    res.json({ imageData: result.data[0].b64_json });
   } catch (error) {
-    console.error('Error querying Hugging Face API:', error);
-    res.status(500).json({ error: 'Error querying Hugging Face API' });
+    console.error("Error querying Fal AI via SDK:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
