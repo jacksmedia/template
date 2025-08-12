@@ -26,7 +26,7 @@ console.log('Max requests per window:', RATE_LIMIT_MAX);
 // Initialize client with fal-ai provider
 const client = new InferenceClient({
   apiKey: process.env.HF_TOKEN,
-  // provider: "fal-ai"
+  provider: "hf" // Opt for HuggingFace, NOT auto selection of 3rd parties
 });
 
 ////////////////////////////////////////////////
@@ -44,7 +44,7 @@ const imageGenerationLimiter = rateLimit({
   legacyHeaders: false, // Disables the `X-RateLimit-*` headers
   // Uses IP address for rate limiting 🧐
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+    return req.ip || req.socket.remoteAddress;
   },
   // Custom handler, when limit is exceeded
   handler: (req, res) => {
@@ -74,22 +74,94 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
 
+// Deployed server configs
+app.set('trust proxy', 1);
+app.use('/api', apiLimiter);
+
 // Serve React app
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Simple test endpoint
-// app.get('/test', (req, res) => {
-//   console.log('Test endpoint hit');
-//   res.json({ message: 'Server is working!', timestamp: new Date().toISOString() });
-// });
+// Health check endpoint (not rate limited)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: isDevelopment ? 'development' : 'production',
+    rateLimits: {
+      imageGeneration: {
+        windowMs: RATE_LIMIT_WINDOW,
+        maxRequests: RATE_LIMIT_MAX
+      }
+    }
+  });
+});
 
-// Health check endpoint
-// app.post('/health', (req, res) => {
-//   console.log('Health check endpoint hit');
-//   res.json({ status: 'ok', body: req.body });
-// });
+
+// Rate limit status endpoint
+app.get('/api/rate-limit-status', apiLimiter, (req, res) => {
+  res.json({
+    message: 'Rate limit status',
+    limits: {
+      imageGeneration: {
+        windowSeconds: RATE_LIMIT_WINDOW / 1000,
+        maxRequests: RATE_LIMIT_MAX,
+        environment: isDevelopment ? 'development' : 'production'
+      },
+      api: {
+        windowSeconds: 15 * 60,
+        maxRequests: 100
+      }
+    }
+  });
+});
+
+
+// Tests different providers' endpoints
+app.post('/api/test-providers', apiLimiter, async (req, res) => {
+  const providers = ['hf', 'fal-ai'];
+  const results = {};
+  
+  for (const provider of providers) {
+    try {
+      console.log(`Testing provider: ${provider}`);
+      const testClient = new InferenceClient({
+        apiKey: process.env.HF_TOKEN,
+        provider: provider
+      });
+      
+      // Quick test with a simple prompt
+      await testClient.textToImage({
+        model: "black-forest-labs/FLUX.1-schnell",
+        inputs: "test image"
+      });
+      
+      results[provider] = { status: 'working', error: null };
+      console.log(`✅ Provider ${provider} working`);
+      
+    } catch (error) {
+      results[provider] = { 
+        status: 'failed', 
+        error: error.message,
+        type: error.constructor.name 
+      };
+      console.log(`❌ Provider ${provider} failed:`, error.message);
+    }
+  }
+  
+  res.json({
+    message: 'Provider test results',
+    results: results,
+    timestamp: new Date().toISOString()
+  });
+});
+
+
+
+
+
+
 
 // Image gen query with rate limiting logic
 app.post('/query', imageGenerationLimiter, async (req, res) => {
