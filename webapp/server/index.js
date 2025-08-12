@@ -3,33 +3,53 @@ import { InferenceClient } from "@huggingface/inference";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import 'dotenv/config';
-// import { stat } from "fs";
 
 const app = express();
 const port = 3001;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Rate limiting tied to app's environment
+// Environment-based rate limiting configuration
 const isDevelopment = process.env.NODE_ENV !== 'production';
-const RATE_LIMIT_WINDOW = isDevelopment ? 60 * 1000 : 4 * 60 * 60 * 1000 // 1m in dev; 4hrs in prod
-const RATE_LIMIT_MAX = isDevelopment ? 1 : 2 // 1 req per window in dev; 2 in prod
+const RATE_LIMIT_WINDOW = isDevelopment ? 60 * 1000 : 4 * 60 * 60 * 1000; // 1 minute dev, 4 hours prod
+const RATE_LIMIT_MAX = isDevelopment ? 1 : 3; // More requests allowed in dev
 
 console.log('=== Rate Limiting Config ===');
 console.log('Environment:', isDevelopment ? 'Development' : 'Production');
 console.log('Window:', RATE_LIMIT_WINDOW / 1000, 'seconds');
 console.log('Max requests per window:', RATE_LIMIT_MAX);
 
+// Debug environment variables
+console.log('=== Environment Debug ===');
+console.log('HF_TOKEN type:', typeof process.env.HF_TOKEN);
+console.log('HF_TOKEN value:', process.env.HF_TOKEN ? 'EXISTS (hidden for security)' : 'MISSING');
 
-// Initialize client with fal-ai provider
+// Validate token before creating client
+if (!process.env.HF_TOKEN) {
+  console.error('❌ HF_TOKEN is missing from environment variables');
+  process.exit(1);
+}
+
+if (typeof process.env.HF_TOKEN !== 'string') {
+  console.error('❌ HF_TOKEN is not a string:', typeof process.env.HF_TOKEN);
+  process.exit(1);
+}
+
+if (!process.env.HF_TOKEN.startsWith('hf_')) {
+  console.error('❌ HF_TOKEN does not start with hf_');
+  process.exit(1);
+}
+
+console.log('✅ HF_TOKEN validation passed');
+
+// Initialize HuggingFace client with explicit provider
 const client = new InferenceClient({
   apiKey: process.env.HF_TOKEN,
-  provider: "hf" // Opt for HuggingFace, NOT auto selection of 3rd parties
+  provider: "hf" // Force HuggingFace's own inference instead of auto-selection
 });
 
-////////////////////////////////////////////////
 // Rate limiting middleware for image generation
 const imageGenerationLimiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW,
@@ -40,13 +60,13 @@ const imageGenerationLimiter = rateLimit({
     retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000),
     resetTime: new Date(Date.now() + RATE_LIMIT_WINDOW).toISOString()
   },
-  standardHeaders: true, // Returns rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disables the `X-RateLimit-*` headers
-  // Uses IP address for rate limiting 🧐
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Use IP address for rate limiting
   keyGenerator: (req) => {
-    return req.ip || req.socket.remoteAddress;
+    return req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
   },
-  // Custom handler, when limit is exceeded
+  // Custom handler for when limit is exceeded
   handler: (req, res) => {
     console.log(`❌ Rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
@@ -61,21 +81,21 @@ const imageGenerationLimiter = rateLimit({
 // General API rate limiter (more lenient for non-generation endpoints)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1, // Limits each IP to 1 request per windowMs
+  max: 100, // Limit each IP to 100 requests per windowMs
   message: {
     error: 'Too many API requests',
     message: 'Too many requests from this IP, please try again later.'
   }
 });
-//////////////////////////////////////////////// end middleware
 
-// Main server configs
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Deployed server configs
+// Trust proxy for accurate IP addresses (important for Vercel)
 app.set('trust proxy', 1);
+
+// Apply general rate limiting to all API routes
 app.use('/api', apiLimiter);
 
 // Serve React app
@@ -83,7 +103,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Health check endpoint (not rate limited)
+// Health check endpoint (not rate limited for monitoring)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -97,7 +117,6 @@ app.get('/health', (req, res) => {
     }
   });
 });
-
 
 // Rate limit status endpoint
 app.get('/api/rate-limit-status', apiLimiter, (req, res) => {
@@ -117,8 +136,7 @@ app.get('/api/rate-limit-status', apiLimiter, (req, res) => {
   });
 });
 
-
-// Tests different providers' endpoints
+// Test different providers endpoint
 app.post('/api/test-providers', apiLimiter, async (req, res) => {
   const providers = ['hf', 'fal-ai'];
   const results = {};
@@ -157,13 +175,7 @@ app.post('/api/test-providers', apiLimiter, async (req, res) => {
   });
 });
 
-
-
-
-
-
-
-// Image gen query with rate limiting logic
+// Image generation endpoint with strict rate limiting
 app.post('/query', imageGenerationLimiter, async (req, res) => {
   console.log('=== /query endpoint hit ===');
   console.log('IP:', req.ip);
@@ -171,38 +183,62 @@ app.post('/query', imageGenerationLimiter, async (req, res) => {
   
   try {
     console.log('Attempting to create image with prompt:', req.body.prompt);
-        
-    // Prompt validation
+    
+    // Validate prompt
     if (!req.body.prompt || typeof req.body.prompt !== 'string') {
       return res.status(400).json({
         error: 'Invalid prompt',
-        message: 'Prompt must be a text string'
+        message: 'Prompt must be a non-empty string'
       });
     }
 
-    // Limits prompt size for many reasons
+    // Limit prompt length to prevent abuse
     if (req.body.prompt.length > 500) {
       return res.status(400).json({
         error: 'Prompt too long',
-        message: 'Prompt cannot be longer than 500 characters'
+        message: 'Prompt must be 500 characters or less'
       });
     }
 
-    console.log('Using HuggingFace Inference API to run FLUX model...');
-    const result = await client.textToImage({
-      model: "black-forest-labs/FLUX.1-schnell", // vs default FLUX
-      inputs: req.body.prompt
-    });
+    console.log('Using HuggingFace Inference API...');
+    
+    // Try with explicit provider first, fallback to auto if needed
+    let result;
+    try {
+      console.log('Attempting with HF provider...');
+      const hfClient = new InferenceClient({
+        apiKey: process.env.HF_TOKEN,
+        provider: "hf"
+      });
+      
+      result = await hfClient.textToImage({
+        model: "black-forest-labs/FLUX.1-schnell",
+        inputs: req.body.prompt
+      });
+      console.log('✅ HF provider successful');
+      
+    } catch (providerError) {
+      console.log('⚠️ HF provider failed, trying auto-selection...');
+      console.log('Provider error:', providerError.message);
+      
+      // Fallback to auto-selection
+      const autoClient = new InferenceClient(process.env.HF_TOKEN);
+      result = await autoClient.textToImage({
+        model: "black-forest-labs/FLUX.1-schnell",
+        inputs: req.body.prompt
+      });
+      console.log('✅ Auto-selection successful');
+    }
 
     console.log('HF API call successful, processing response...');
 
-    // Converts Blob to Buffer, then to base64
+    // Convert Blob to Buffer, then to base64
     const buffer = Buffer.from(await result.arrayBuffer());
     const base64Image = buffer.toString('base64');
 
-    console.log('Image generated successfully, size:', base64Image.length);
+    console.log('✅ Image generated successfully, size:', base64Image.length);
     
-    res.json({
+    res.json({ 
       imageData: base64Image,
       meta: {
         model: "black-forest-labs/FLUX.1-schnell",
@@ -216,7 +252,7 @@ app.post('/query', imageGenerationLimiter, async (req, res) => {
     console.error("Error message:", error.message);
     console.error("Error type:", error.constructor.name);
     
-    // Won't expose internal errors in production
+    // Don't expose internal errors in production
     const errorMessage = isDevelopment ? error.message : 'Image generation failed';
     
     res.status(500).json({ 
@@ -228,7 +264,8 @@ app.post('/query', imageGenerationLimiter, async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log('=== Server Started ===');
+  console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`📊 Rate limiting: ${RATE_LIMIT_MAX} requests per ${RATE_LIMIT_WINDOW / 1000}s`);
   console.log(`🔒 Environment: ${isDevelopment ? 'Development' : 'Production'}`);
 });
