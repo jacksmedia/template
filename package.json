@@ -16,8 +16,8 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test",
-    "build": "node ./webapp/server/index.js & (cd ./webapp/client && vite build)"
-  },
+    "build": "(cd ./webapp/server && npm install) && node ./webapp/server/index.js & (cd ./webapp/client && npm run build)",
+    "dev": "concurrently \"cd ./webapp/server && npm run dev\" \"cd ./webapp/client && npm run dev\""  },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
     "cors": "^2.8.5",
