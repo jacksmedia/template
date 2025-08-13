@@ -19,10 +19,12 @@
     "build": "(cd ./webapp/server && npm install) && node ./webapp/server/index.js & (cd ./webapp/client && npm install && npm run build)",
     "dev": "concurrently \"cd ./webapp/server && npm run dev\" \"cd ./webapp/client && npm run dev\""  },
   "dependencies": {
-    "@tonejs/midi": "^2.0.28",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "fs": "^0.0.1-security",
-    "multer": "^2.0.2"
+    "fs": "^0.0.1-security"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.0.0"
   }
 }
