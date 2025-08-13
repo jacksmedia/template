@@ -89,6 +89,7 @@ const apiLimiter = rateLimit({
 });
 
 app.use(express.json({ limit: '10mb' }));
+app.use(cors());
 app.use(cors({ origin: 'https://j4cks-flux.vercel.app' }));
 app.use(express.static(path.join(__dirname, 'build')));
 

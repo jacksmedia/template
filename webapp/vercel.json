@@ -1,11 +1,20 @@
 {
   "version": 2,
   "builds": [
-    { "src": "client/package.json", "use": "@vercel/static-build" },
-    { "src": "server/index.js", "use": "@vercel/node" }
+    {
+      "src": "webapp/client/package.json",
+      "use": "@vercel/static-build"
+    },
+    {
+      "src": "webapp/server/index.js",
+      "use": "@vercel/node",
+      "config": { 
+        "installCommand": "cd webapp/server && npm install"
+      }
+    }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "server/index.js" },
-    { "src": "/(.*)", "dest": "client" }
+    { "src": "/api/(.*)", "dest": "webapp/server/index.js" },
+    { "src": "/(.*)", "dest": "webapp/client" }
   ]
 }
