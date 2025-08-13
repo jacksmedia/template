@@ -1,10 +1,10 @@
 {
-  "name": "fullstack-node-react-template",
+  "name": "j4cks-flux",
   "version": "1.0.0",
-  "description": "generic fullstack webapp backbone",
+  "description": "HuggingFace endpoint demo",
   "keywords": [
-    "midi",
-    "hexbyte"
+    "HuggingFace",
+    "flux"
   ],
   "repository": {
     "type": "git",
@@ -15,7 +15,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test"
+    "test": "npm run test",
+    "build": "node ./webapp/server/index.js & (cd ./webapp/client && vite build)"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
