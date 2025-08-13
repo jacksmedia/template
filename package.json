@@ -16,7 +16,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run test",
-    "build": "(cd ./webapp/server && npm install) && node ./webapp/server/index.js & (cd ./webapp/client && npm install && npm run build)",
+    "build": "(cd ./webapp/server && npm install) && node ./webapp/server/index.js & (cd ./webapp/client && npm install && npm run build) && vite build && ln -s public dist",
     "dev": "concurrently \"cd ./webapp/server && npm run dev\" \"cd ./webapp/client && npm run dev\""  },
   "dependencies": {
     "cors": "^2.8.5",
