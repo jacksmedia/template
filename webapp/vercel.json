@@ -5,7 +5,7 @@
       "src": "webapp/client/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "outputDirectory": "../../public",
+        "outputDirectory": "public",
         "installCommand": "cd webapp/client && npm install",
         "buildCommand": "cd webapp/client && npm run build"
       }
