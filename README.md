@@ -14,7 +14,7 @@ type:
 `npm run dev`
 
 ## Details
-App is intended to demonstrate the HuggingFace ecosystem of text-to-image models by querying one and rendering an image based on a hardcoded text prompt. Future versions of this will offer an input for custom user prompts.
+App is intended to demonstrate the HuggingFace ecosystem of text-to-image models by querying one (Flux) and rendering an image based on a hardcoded text prompt.
 
 Severe rate limiting will exist when this app is deployed in order to prevent abuse and prohibitive charges to the account that's behind this project.
 
